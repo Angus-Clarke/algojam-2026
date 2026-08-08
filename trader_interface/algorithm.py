@@ -1,9 +1,37 @@
 import numpy as np
 
-# Constants
-SIZZLE_SAFETY_MARGIN = 0.002 # 1% Increase
-UQ_DOLLAR_WAIT = 20
+## Constants
+
+# UQ
+UQ = "UQ Dollar"
+UQ_WAIT = 20
+UQ_AVG = 100
 UQ_SAFETY_MARGIN = 0.002
+
+# Fintech Token
+FT = "Fintech Token"
+
+# Thriften Jeans
+TJ = "Thrifted Jeans"
+
+# Boat Party Ticket
+BPT = "Boat Party Ticket"
+
+# Sausage Sizzle
+SS = "Sausage Sizzle"
+SIZZLE_SAFETY_MARGIN = 0.002 # 1% Increase
+
+# Bread
+B = "Bread"
+
+# Sausage
+S = "Sausage"
+
+# MenuDash
+MD = "MenuDash"
+
+# Liferaft Ticket
+LT = "Liferaft Ticket"
 
 # Custom trading Algorithm
 class Algorithm():
@@ -35,93 +63,85 @@ class Algorithm():
             # For each instrument initilise desired position to zero
             desiredPositions[instrument] = 0
 
-        # IMPLEMENT CODE HERE TO DECIDE WHAT POSITIONS YOU WANT 
         #######################################################################
         # Display the current trading day
         print("Starting Algorithm for Day:", self.day)
-        
-        
-        # Trade thrifted jeans and the sausage sizzle
-        trade_instruments = ["Thrifted Jeans"]
-        
-        # Display the prices of instruments I want to trade
+                
+        # Display the prices of instruments to be traded
+        trade_instruments = [UQ, FT, TJ, BPT, SS, B, S, MD, LT]
         for ins in trade_instruments:
             print(f"{ins}: ${self.get_current_price(ins)}")
 
-############################################################################################
-        # UQ Dollar Trading
-        if self.day > UQ_DOLLAR_WAIT:
-            UQ_dollar_avg = 100
-            if self.data["UQ Dollar"][-1]/UQ_dollar_avg > 1 + UQ_SAFETY_MARGIN:
-                desiredPositions["UQ Dollar"] = -positionLimits["UQ Dollar"]
-            elif self.data["UQ Dollar"][-1]/UQ_dollar_avg < 1 - UQ_SAFETY_MARGIN:
-                desiredPositions["UQ Dollar"] = positionLimits["UQ Dollar"]
-        
-        # If its 10th day or more, then trade
-        if self.day >= 10:
+        #######################################################################
+        # UQ Dollar
+        if self.day > UQ_WAIT:
+            if self.data[UQ][-1]/UQ_AVG > 1 + UQ_SAFETY_MARGIN:
+                desiredPositions[UQ] = -positionLimits[UQ]
+            elif self.data[UQ][-1]/UQ_AVG < 1 - UQ_SAFETY_MARGIN:
+                desiredPositions[UQ] = positionLimits[UQ]
+
+        # Fintech Token
+
+        # Thrifted Jeans
+        if self.day >= 2:
             for ins in trade_instruments:
                 # if price has gone down, buy
-                todays_price = self.data[ins][-1]
-                yesterdays_price = self.data[ins][-2]
+                todays_price = self.data[TJ][-1]
+                yesterdays_price = self.data[TJ][-2]
                 if yesterdays_price > todays_price:
-                    desiredPositions[ins] = positionLimits[ins]
+                    desiredPositions[TJ] = positionLimits[TJ]
                 else: # else, short
-                    desiredPositions[ins] = -positionLimits[ins]
+                    desiredPositions[TJ] = -positionLimits[TJ]
 
-            # Thrifted Jeans Trading (Swing Trading)
-            todays_price = self.data["Thrifted Jeans"][-1]
-            yesterdays_price = self.data["Thrifted Jeans"][-2]
-            if yesterdays_price > todays_price:
-                desiredPositions["Thrifted Jeans"] = positionLimits["Thrifted Jeans"]
-            elif yesterdays_price < todays_price: # else, short
-                desiredPositions["Thrifted Jeans"] = -positionLimits["Thrifted Jeans"]
+        # Boat Party Ticket
+        if self.day % 365 <= 30:
+            desiredPositions[BPT] = positionLimits[BPT]
+        elif 30 < self.day % 365 <= 130:
+            desiredPositions[BPT] = -positionLimits[BPT]
+        elif 130 < self.day % 365 <= 190:
+            desiredPositions[BPT] = positionLimits[BPT]
+        elif 190 < self.day % 365 <= 300:
+            desiredPositions[BPT] = -positionLimits[BPT]
+        elif 300 < self.day % 365:
+            desiredPositions[BPT] = positionLimits[BPT]
 
-            # Sausage Sizzle Trading (Index Trading)
-            print(f"{"Sausage Sizzle"}: ${self.get_current_price("Sausage Sizzle")}")
-
-            bread_change = self.data["Bread"][-1] / self.data["Bread"][-2]
-            sausage_change = self.data["Sausage"][-1] / self.data["Sausage"][-2]
-            menu_dash_change = self.data["MenuDash"][-1] / self.data["MenuDash"][-2]
+        # Sausage Sizzle
+        if self.day >= 2:
+            bread_change = self.data[B][-1] / self.data[B][-2]
+            sausage_change = self.data[S][-1] / self.data[S][-2]
+            menu_dash_change = self.data[MD][-1] / self.data[MD][-2]
 
             avg_change = (bread_change + sausage_change + menu_dash_change) / 3
             
-            sausage_sizzle_change = self.data["Sausage Sizzle"][-1] / self.data["Sausage Sizzle"][-2]
+            sausage_sizzle_change = self.data[SS][-1] / self.data[SS][-2]
             if sausage_sizzle_change > avg_change:
-                desiredPositions["Sausage Sizzle"] = -positionLimits["Sausage Sizzle"]
+                desiredPositions[SS] = -positionLimits[SS]
             else:
-                desiredPositions["Sausage Sizzle"] = positionLimits["Sausage Sizzle"]
+                desiredPositions[SS] = positionLimits[SS]
 
-            # Sausage Sizzle Component Trading (i.e. Bread, Sausage, MenuDash)
+            # Bread
             if bread_change > sausage_sizzle_change + SIZZLE_SAFETY_MARGIN:
-                desiredPositions["Bread"] = -positionLimits["Bread"]
+                desiredPositions[B] = -positionLimits[B]
             elif bread_change < sausage_sizzle_change - SIZZLE_SAFETY_MARGIN:
-                desiredPositions["Bread"] = positionLimits["Bread"]
+                desiredPositions[B] = positionLimits[B]
 
+            # Sausage
             if sausage_change > sausage_sizzle_change + SIZZLE_SAFETY_MARGIN:
-                desiredPositions["Sausage"] = -positionLimits["Sausage"]
+                desiredPositions[S] = -positionLimits[S]
             elif sausage_change < sausage_sizzle_change - SIZZLE_SAFETY_MARGIN:
-                desiredPositions["Sausage"] = positionLimits["Sausage"]
+                desiredPositions[S] = positionLimits[S]
 
+            # MenuDash
             if menu_dash_change > sausage_sizzle_change + SIZZLE_SAFETY_MARGIN:
-                desiredPositions["MenuDash"] = -positionLimits["MenuDash"]
+                desiredPositions[MD] = -positionLimits[MD]
             elif menu_dash_change < sausage_sizzle_change - SIZZLE_SAFETY_MARGIN:
-                desiredPositions["MenuDash"] = positionLimits["MenuDash"]
+                desiredPositions[MD] = positionLimits[MD]
 
-        # Boat Party Ticket Trading
-        if self.day % 365 <= 30:
-            desiredPositions["Boat Party Ticket"] = positionLimits["Boat Party Ticket"]
-        elif 30 < self.day % 365 <= 130:
-            desiredPositions["Boat Party Ticket"] = -positionLimits["Boat Party Ticket"]
-        elif 130 < self.day % 365 <= 190:
-            desiredPositions["Boat Party Ticket"] = positionLimits["Boat Party Ticket"]
-        elif 190 < self.day % 365 <= 300:
-            desiredPositions["Boat Party Ticket"] = -positionLimits["Boat Party Ticket"]
-        elif 300 < self.day % 365:
-            desiredPositions["Boat Party Ticket"] = positionLimits["Boat Party Ticket"]
-                                
-                    
+        # Liferaft Ticket
+        
+
+        #######################################################################
         # Display the end of trading day
         print("Ending Algorithm for Day:", self.day, "\n")
-        #######################################################################
         # Return the desired positions
         return desiredPositions
