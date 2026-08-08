@@ -39,7 +39,7 @@ class Algorithm():
         
         
         # Trade thrifted jeans and the sausage sizzle
-        trade_instruments = ["Thrifted Jeans", "Sausage Sizzle"]
+        trade_instruments = ["Thrifted Jeans"]
         
         # Display the prices of instruments I want to trade
         for ins in trade_instruments:
@@ -55,7 +55,33 @@ class Algorithm():
                     desiredPositions[ins] = positionLimits[ins]
                 else: # else, short
                     desiredPositions[ins] = -positionLimits[ins]
-                    
+
+            # Thrifted Jeans Trading
+            todays_price = self.data["Thrifted Jeans"][-1]
+            yesterdays_price = self.data["Thrifted Jeans"][-2]
+            if yesterdays_price > todays_price:
+                desiredPositions["Thrifted Jeans"] = positionLimits["Thrifted Jeans"]
+            else: # else, short
+                desiredPositions["Thrifted Jeans"] = -positionLimits["Thrifted Jeans"]
+
+            # Sausage Sizzle Trading
+            print(f"{"Sausage Sizzle"}: ${self.get_current_price("Sausage Sizzle")}")
+
+            bread_change = self.data["Bread"][-1] / self.data["Bread"][-2]
+            sausage_change = self.data["Sausage"][-1] / self.data["Sausage"][-2]
+            menu_dash_change = self.data["MenuDash"][-1] / self.data["MenuDash"][-2]
+
+            avg_change = (bread_change + sausage_change + menu_dash_change) / 3
+            
+            sausage_sizzle_change = self.data["Sausage Sizzle"][-1] / self.data["Sausage Sizzle"][-2]
+            if sausage_sizzle_change > avg_change:
+                desiredPositions["Sausage Sizzle"] = -positionLimits["Sausage Sizzle"]
+            else:
+                desiredPositions["Sausage Sizzle"] = positionLimits["Sausage Sizzle"]
+            # Sausage Sizzle Component Trading (i.e. Bread, Sausage, MenuDash)
+            
+
+                                
                     
         # Display the end of trading day
         print("Ending Algorithm for Day:", self.day, "\n")
