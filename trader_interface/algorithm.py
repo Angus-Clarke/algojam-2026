@@ -1,5 +1,7 @@
 import numpy as np
 
+# Example Change
+
 # Custom trading Algorithm
 class Algorithm():
 
