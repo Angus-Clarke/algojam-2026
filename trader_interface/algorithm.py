@@ -1,10 +1,10 @@
 import numpy as np
+import pandas as pd
 
 ## Constants
 
 # UQ
 UQ = "UQ Dollar"
-UQ_WAIT = 20
 UQ_AVG = 100
 UQ_SAFETY_MARGIN = 0.002
 
@@ -13,19 +13,20 @@ FT = "Fintech Token"
 
 # Thriften Jeans
 TJ = "Thrifted Jeans"
+TJ_SAFETY_MARGIN = 0.005
 
 # Boat Party Ticket
 BPT = "Boat Party Ticket"
 
 # Sausage Sizzle
 SS = "Sausage Sizzle"
-SIZZLE_SAFETY_MARGIN = 0.002 # 1% Increase
+SIZZLE_SAFETY_MARGIN = 0
 
 # Bread
 B = "Bread"
-
 # Sausage
 S = "Sausage"
+BS_SAFETY_MARGIN = 0
 
 # MenuDash
 MD = "MenuDash"
@@ -72,31 +73,32 @@ class Algorithm():
         for ins in trade_instruments:
             print(f"{ins}: ${self.get_current_price(ins)}")
 
+        # Create data frame to be used for EMAs
+        df = pd.DataFrame(self.data)
+
         #######################################################################
         # UQ Dollar
-        if self.day > UQ_WAIT:
-            if self.data[UQ][-1]/UQ_AVG > 1 + UQ_SAFETY_MARGIN:
-                desiredPositions[UQ] = -positionLimits[UQ]
-            elif self.data[UQ][-1]/UQ_AVG < 1 - UQ_SAFETY_MARGIN:
-                desiredPositions[UQ] = positionLimits[UQ]
+        if self.data[UQ][-1]/UQ_AVG > 1 + UQ_SAFETY_MARGIN:
+            desiredPositions[UQ] = -positionLimits[UQ]
+        elif self.data[UQ][-1]/UQ_AVG < 1 - UQ_SAFETY_MARGIN:
+            desiredPositions[UQ] = positionLimits[UQ]
 
         # Fintech Token
 
-        # Thrifted Jeans
-        if self.day >= 2:
-            for ins in trade_instruments:
-                # if price has gone down, buy
-                todays_price = self.data[TJ][-1]
-                yesterdays_price = self.data[TJ][-2]
-                if yesterdays_price > todays_price:
-                    desiredPositions[TJ] = positionLimits[TJ]
-                else: # else, short
-                    desiredPositions[TJ] = -positionLimits[TJ]
+        # Thrifted Jeans (Most volatility)
+        if self.day >= 7:
+            # if price has gone down, buy
+            df['TJ_EMA_8'] = df[TJ].ewm(span=8, adjust=False).mean()
+            df['TJ_EMA_5'] = df[TJ].ewm(span=5, adjust=False).mean()
+            if df['TJ_EMA_5'].iloc[-1] / df['TJ_EMA_8'].iloc[-1] > 1 + TJ_SAFETY_MARGIN:
+                desiredPositions[TJ] = positionLimits[TJ]
+            elif df['TJ_EMA_5'].iloc[-1] / df['TJ_EMA_8'].iloc[-1] < 1 - TJ_SAFETY_MARGIN:
+                desiredPositions[TJ] = -positionLimits[TJ]
 
-        # Boat Party Ticket
-        if self.day % 365 <= 30:
+        # Boat Party Ticket (Hard coded based of timeline of uni year)
+        if self.day % 365 <= 50:
             desiredPositions[BPT] = positionLimits[BPT]
-        elif 30 < self.day % 365 <= 130:
+        elif 30 < self.day % 365 <= 160:
             desiredPositions[BPT] = -positionLimits[BPT]
         elif 130 < self.day % 365 <= 190:
             desiredPositions[BPT] = positionLimits[BPT]
@@ -109,32 +111,38 @@ class Algorithm():
         if self.day >= 2:
             bread_change = self.data[B][-1] / self.data[B][-2]
             sausage_change = self.data[S][-1] / self.data[S][-2]
-            menu_dash_change = self.data[MD][-1] / self.data[MD][-2]
-
-            avg_change = (bread_change + sausage_change + menu_dash_change) / 3
+            avg_change = (bread_change + sausage_change) / 2
             
             sausage_sizzle_change = self.data[SS][-1] / self.data[SS][-2]
-            if sausage_sizzle_change > avg_change:
+            if avg_change < 1:
                 desiredPositions[SS] = -positionLimits[SS]
             else:
                 desiredPositions[SS] = positionLimits[SS]
 
-            # Bread
-            if bread_change > sausage_sizzle_change + SIZZLE_SAFETY_MARGIN:
-                desiredPositions[B] = -positionLimits[B]
-            elif bread_change < sausage_sizzle_change - SIZZLE_SAFETY_MARGIN:
+            # Bread and Sausage
+            df['B_EMA_8'] = df[B].ewm(span=8, adjust=False).mean()
+            df['B_EMA_5'] = df[B].ewm(span=5, adjust=False).mean()
+            df['S_EMA_8'] = df[S].ewm(span=8, adjust=False).mean()
+            df['S_EMA_5'] = df[S].ewm(span=5, adjust=False).mean()
+
+            if df['B_EMA_5'].iloc[-1] / df['B_EMA_8'].iloc[-1] > 1 + BS_SAFETY_MARGIN:
                 desiredPositions[B] = positionLimits[B]
+            elif df['B_EMA_5'].iloc[-1] / df['B_EMA_8'].iloc[-1] < 1 - BS_SAFETY_MARGIN:
+                desiredPositions[B] = -positionLimits[B] * 0.5
 
-            # Sausage
-            if sausage_change > sausage_sizzle_change + SIZZLE_SAFETY_MARGIN:
-                desiredPositions[S] = -positionLimits[S]
-            elif sausage_change < sausage_sizzle_change - SIZZLE_SAFETY_MARGIN:
+            if df['S_EMA_5'].iloc[-1] / df['S_EMA_8'].iloc[-1] > 1 + BS_SAFETY_MARGIN:
                 desiredPositions[S] = positionLimits[S]
+            elif df['S_EMA_5'].iloc[-1] / df['S_EMA_8'].iloc[-1] < 1 - BS_SAFETY_MARGIN:
+                desiredPositions[S] = -positionLimits[S] * 0.5
 
-            # MenuDash
-            if menu_dash_change > sausage_sizzle_change + SIZZLE_SAFETY_MARGIN:
+        # MenuDash
+        if self.day >= 7:
+            # Create exponential moving average
+            df['SS_EMA_14'] = df[SS].ewm(span=14, adjust=False).mean()
+
+            if df['SS_EMA_14'].iloc[-1] > self.data[SS][-1]:
                 desiredPositions[MD] = -positionLimits[MD]
-            elif menu_dash_change < sausage_sizzle_change - SIZZLE_SAFETY_MARGIN:
+            else:
                 desiredPositions[MD] = positionLimits[MD]
 
         # Liferaft Ticket
